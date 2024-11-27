@@ -1,0 +1,94 @@
+import numpy as np
+import unittest
+
+
+# Function to generate random threat data
+def generate_random_data(mean, variance, num_samples):
+    return np.random.randint(max(mean - variance, 0), min(mean + variance + 1, 90), num_samples)
+
+
+# Function to compute the department's average threat score
+def compute_department_score(threat_scores):
+    return np.mean(threat_scores)
+
+
+# Function to compute the overall company's aggregated threat score
+def compute_aggregated_threat_score(departments):
+    department_scores = []
+
+    for department in departments:
+        users = department['users']
+        variance_threat = np.var(users)
+        dept_score = compute_department_score(users)
+        department_scores.append(dept_score + variance_threat)
+
+    # Weighted average of department scores
+    aggregated_score = np.mean(department_scores)
+    return min(max(0, int(aggregated_score)), 90)
+
+
+# Functional test case using unittest
+class TestCyberSecurity(unittest.TestCase):
+
+    def setUp(self):
+        # Setup basic department parameters for test cases
+        self.departments = ['Engineering', 'Marketing', 'Finance', 'HR', 'Science']
+
+    def test__no_outliers_same_threat_score(self):
+        """ Case where all departments have no outliers, similar threat scores """
+        departments = [
+            {'users': generate_random_data(45, 5, 100)} for _ in  self.departments
+        ]
+
+        departments[2] = {'users': generate_random_data(50, 5, 100)}
+
+        # Compute the aggregated threat score
+        aggregated_score = compute_aggregated_threat_score(departments)
+        print(f"Aggregated Score (no outliers): {aggregated_score}")
+        self.assertTrue(40 <= aggregated_score <= 60, f"Aggregated score is out of range: {aggregated_score}")
+
+    def test__high_outlier_department(self):
+        """ Case where one department has significantly higher threat score than others """
+        departments = [
+            {'users': generate_random_data(45, 10, 100)} for _ in self.departments
+        ]
+
+        departments[3] = {'users': generate_random_data(80, 5, 100)}
+
+        # Compute the aggregated threat score
+        aggregated_score = compute_aggregated_threat_score(departments)
+        print(f"Aggregated Score (high outlier): {aggregated_score}")
+        self.assertTrue(50 <= aggregated_score <= 90, f"Aggregated score is out of range: {aggregated_score}")
+
+    def test__varied_department_sizes(self):
+        """ Case where departments have varying  threat score distributions """
+        departments = [
+            {'users': generate_random_data(45, 10, 50)},  # Small department
+            {'users': generate_random_data(40, 5, 200)},  # Large department
+            {'users': generate_random_data(50, 15, 100)},  # Medium department
+            {'users': generate_random_data(35, 5, 150)},  # Medium-large department
+            {'users': generate_random_data(80, 20, 30)}  # Very small department
+        ]
+
+        # Compute the aggregated threat score
+        aggregated_score = compute_aggregated_threat_score(departments)
+        print(f"Aggregated Score (varying size): {aggregated_score}")
+        self.assertTrue(50 <= aggregated_score <= 90, f"Aggregated score is out of range: {aggregated_score}")
+
+    def test_extreme_outliers(self):
+        """ Case where some departments have extreme outliers """
+        departments = [
+            {'users': generate_random_data(40, 10, 100)} for _ in self.departments
+        ]
+        # Add extreme outliers to one department
+        departments[4]['users'] = np.append(departments[3]['users'], [90, 90, 90, 90, 90])
+
+        # Compute the aggregated threat score
+        aggregated_score = compute_aggregated_threat_score(departments)
+        print(f"Aggregated Score (extreme outlier): {aggregated_score}")
+        self.assertTrue(50 <= aggregated_score <= 90, f"Aggregated score is out of range: {aggregated_score}")
+
+
+# Run the unit tests
+if __name__ == '__main__':
+    unittest.main()
